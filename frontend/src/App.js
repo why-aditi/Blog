@@ -9,11 +9,16 @@ import Navigation from "./components/Navigation";
 import "./App.css";
 import PageRenderer from "./PageRenderer";
 
+const user = {
+  first: "Aditi",
+  last: "Kala",
+};
+
 function App() {
   return (
     <Router>
       <div className="App">
-        <Navigation />
+        <Navigation user={user} />
         <Routes>
           <Route path="/:page" element={<PageRenderer />} />
           <Route path="/" element={<Navigate to="/home" />} />
