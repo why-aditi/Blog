@@ -1,0 +1,51 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+
+# Pytest cache
+.pytest_cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# IDE-specific settings
+.idea/
+*.iml
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Mypy cache
+.mypy_cache/
+
+# Coverage reports
+htmlcov/
+coverage.xml
+.coverage
+
+# Pylint reports
+pylint-report.txt
+
+# FastAPI generated files (if applicable)
+openapi.json
+
+# Environment variables
+*.env
+.env.*
