@@ -1,13 +1,10 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import "./App.css";
-import PageRenderer from "./PageRenderer";
+import Home from "./components/home";
+import Login from "./components/login";
+import Blog from "./components/blog";
 
 const user = {
   first: "Aditi",
@@ -20,8 +17,9 @@ function App() {
       <div className="App">
         <Navigation user={user} />
         <Routes>
-          <Route path="/:page" element={<PageRenderer />} />
-          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/blog" element={<Blog />} />
         </Routes>
       </div>
     </Router>

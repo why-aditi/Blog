@@ -1,39 +1,56 @@
 import React, { useState } from "react";
 import "../styles/Navigation.css";
-import { Link } from "react-router-dom";
+import { Link } from "react-router-dom"; // Use this Link for route navigation
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-
-const navLinks = [
-  {
-    title: "Home",
-    path: "/",
-  },
-  {
-    title: "Blog",
-    path: "/blog",
-  },
-  {
-    title: "Contact Us",
-    path: "/contact-us",
-  },
-  {
-    title: "Login",
-    path: "/login",
-  },
-];
 
 export default function Navigation({ user }) {
   const [menuActive, setmenuActive] = useState(false);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <nav className="site-navigation">
       <span className="site-title">UrbanInk</span>
       <div className={`site-content ${menuActive && "active"}`}>
         <ul>
-          {navLinks.map((link, index) => (
-            <li key={index}>
-              <Link to={link.path}>{link.title}</Link>
-            </li>
-          ))}
+          {/* Use RouterLink for home navigation */}
+          <li className="nav-item">
+            <Link
+              to="/"
+              className="nav-link"
+              style={{ cursor: "pointer" }}
+              onClick={scrollToTop}
+            >
+              Home
+            </Link>
+          </li>
+
+          {/* Use ScrollLink for smooth scroll to blog section */}
+          <li className="nav-item">
+            <Link
+              to="/blog"
+              spy={true}
+              smooth={true}
+              offset={-70}
+              duration={500}
+              className="nav-link"
+              style={{ cursor: "pointer" }}
+            >
+              Blog
+            </Link>
+          </li>
+
+          {/* Use RouterLink for login page navigation */}
+          <li className="nav-item">
+            <Link
+              to="/login"
+              className="nav-link"
+              style={{ cursor: "pointer" }}
+            >
+              Login
+            </Link>
+          </li>
         </ul>
         <span className="account">
           <AccountCircleIcon style={{ fontSize: 45 }} />

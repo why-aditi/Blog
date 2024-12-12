@@ -4,7 +4,7 @@ import "../styles/Login.css";
 const Login = () => {
   return (
     <div className="card">
-      <form action="" className="form">
+      <div action="" className="form">
         <p>
           Welcome,<span>sign in to continue</span>
         </p>
@@ -55,7 +55,7 @@ const Login = () => {
             <path d="m13 17 5-5-5-5"></path>
           </svg>
         </button>
-      </form>
+      </div>
     </div>
   );
 };
