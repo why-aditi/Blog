@@ -2,19 +2,25 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/Login.css";
 
-const Login = () => {
+const Signup = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== repeatPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    setError("");
     const payload = { username, email, password };
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
+      const response = await fetch("http://localhost:8000/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,7 +51,7 @@ const Login = () => {
       } else {
         const errorResult = await response.json();
 
-        setError(errorResult.message || "An error occurred during login.");
+        setError(errorResult.message || "An error occurred during signup.");
       }
     } catch (error) {
       setError("An error occurred while processing the request.");
@@ -55,7 +61,7 @@ const Login = () => {
   return (
     <div className="card">
       <form action="" className="form">
-        <p className="sgnup">Sign in to continue</p>
+        <p className="sgnup">Sign Up to continue</p>
         <button className="oauthButton">
           <svg className="icon" viewBox="0 0 24 24">
             <path
@@ -101,6 +107,12 @@ const Login = () => {
           name="password"
           onChange={(e) => setPassword(e.target.value)}
         />
+        <input
+          type="password"
+          placeholder="Repeat Password"
+          name="repeat password"
+          onChange={(e) => setRepeatPassword(e.target.value)}
+        />
         <button className="oauthButton" onClick={handleSubmit}>
           Continue
           <svg
@@ -125,7 +137,7 @@ const Login = () => {
             <div className="alert alert-success">{successMessage}</div>
           )}
         </div>
-        <p className="no-ac">
+        <p className="no-acc">
           Don't have an account?{" "}
           <Link to="/signup" className="fw-bold">
             Signup here
@@ -136,4 +148,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

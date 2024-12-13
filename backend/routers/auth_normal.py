@@ -1,104 +1,118 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from jose import jwt
+from fastapi import APIRouter, HTTPException, status
 from config.database import db
-from config.settings import Settings
-from models.user import User, Token
+from models.user import token_helper
+from schema.user_schema import UserCreate, LoginRequest, Token
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import jwt
+from datetime import timedelta, datetime
+from dotenv import load_dotenv
+from config.settings import settings
+from bson import ObjectId
 
-# App initialization
-app = FastAPI()
+load_dotenv()
 
-token_secret = Settings.JWT_SECRET
-algorithm = Settings.JWT_ALGORITHM
-access_token_expire_minutes = Settings.ACCESS_TOKEN_EXPIRE_MINUTES
+SECRET_KEY = settings.JWT_SECRET
+ALGORITHM = settings.JWT_ALGORITHM
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+routers = APIRouter()
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+@routers.post("/signup", response_model=Token)
+async def create_user(user: UserCreate):
+    # Check if user already exists with the provided email
+    existing_user = await db.find_one({"$or": [{"email": user.email}, {"username": user.username}]})
+    if existing_user:
+        if existing_user["email"] == user.email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        if existing_user["username"] == user.username:
+            raise HTTPException(status_code=400, detail="Username already registered")
 
-# OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+    
+    # Check if username already exists
+    existing_user = await db.find_one({"username": user.username})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    # Hash the password
+    user_data = {
+        "username": user.username,
+        "email": user.email,
+        "password": bcrypt_context.hash(user.password),
+    }
 
-def authenticate_user(email: str, password: str):
-    user = db.find_one({"email": email})
+    # Insert into database
+    new_user = await db.insert_one(user_data)
+    
+    # Fetch the created user from the database
+    created_user = await db.find_one({"_id": new_user.inserted_id})
+
+    if created_user is None:
+        raise HTTPException(status_code=500, detail="User creation failed")
+    
+    # After creating the user, generate and return the access token
+    token = await login_for_access_token(OAuth2PasswordRequestForm(username=user.username, password=user.password))
+    
+    # Debug: Print the token_helper response
+    response = token_helper({
+        "access_token": str(token),
+        "token_type": "bearer",
+        "userid": str(created_user["_id"]),  # Ensure `_id` is converted to a string
+    })
+    print("Generated Token Helper Response:", response)  # Debugging
+    return response
+
+    
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm):
+    user = await authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    EXPIRES_IN_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    token = create_access_token(user["username"], user["_id"], timedelta(minutes=EXPIRES_IN_MINUTES))    
+    return token
+
+
+async def authenticate_user(username: str, password: str):
+    user = await db.find_one({"username": username})
     if not user:
         return False
-    if not verify_password(password, user["password"]):
+    if not bcrypt_context.verify(password, user["password"]):
         return False
     return user
 
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, token_secret, algorithm=algorithm)
+def create_access_token(username: str, user_id: ObjectId, expires_delta: timedelta):
+    to_encode = {"sub": username, "user_id": str(user_id), "exp": datetime.utcnow() + expires_delta}
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, token_secret, algorithms=[algorithm])
-        email = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        user = db.find_one({"email": email})
-        if user is None:
-            raise HTTPException(status_code=401, detail="Invalid user")
-        return User(id=str(user["_id"]), email=email)
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
 
-# Routes
-@app.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
+@routers.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+@routers.post("/login")
+async def login_for_access_token(request: LoginRequest):
+    # Assuming you have a function to authenticate user
+    user = await authenticate_user(request.username, request.password)
+    
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    access_token = create_access_token(
-        data={"sub": user["email"]},
-        expires_delta=timedelta(minutes=access_token_expire_minutes)
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
 
-@app.post("/register")
-def register(email: str, password: str):
-    if db.find_one({"email": email}):
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = get_password_hash(password)
-    user = {"email": email, "password": hashed_password}
-    result = db.insert_one(user)
-    return {"id": str(result.inserted_id), "email": email}
+    # Generate token logic
+    EXPIRES_IN_MINUTES = 60
+    token = create_access_token(user["username"], user["_id"], timedelta(minutes=EXPIRES_IN_MINUTES))
 
-@app.get("/dashboard/{user_id}")
-def dashboard(user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
-    return {"message": f"Welcome to the dashboard, user {current_user.email}!"}
-
-@app.get("/")
-def root():
-    return {"message": "Welcome to the FastAPI JWT Auth Service"}
-
-@app.post("/verify")
-def verify(request: Request, token: str):
-    try:
-        payload = jwt.decode(token, token_secret, algorithms=[algorithm])
-        user_email = payload.get("sub")
-        user = db.find_one({"email": user_email})
-        if user:
-            user_id = str(user["_id"])
-            return RedirectResponse(url=f"/dashboard/{user_id}")
-        else:
-            raise HTTPException(status_code=404, detail="User not found")
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    response = {
+        "access_token": str(token),
+        "token_type": "bearer",
+        "userid": str(user["_id"]),
+    }
+    return response

@@ -1,9 +1,9 @@
-from config.settings import Settings
-import motor.motor_asyncio
+from config.settings import settings
+from motor.motor_asyncio import AsyncIOMotorClient
 
-settings = Settings()
+# Initialize MongoDB client
+client = AsyncIOMotorClient(settings.MONGO_URI)
 
-MONGO_URI = settings.MONGO_URI
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
-
-db = client["Blog"]
+# Select the database and collection
+database = client["Blog"]
+db = database["user"]

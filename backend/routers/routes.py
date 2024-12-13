@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from routers.auth_normal import router as auth_normal_router  
+from routers.auth_normal import routers as auth_normal_router  
 
 
 api_routers = APIRouter()

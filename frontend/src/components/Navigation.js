@@ -14,7 +14,6 @@ export default function Navigation({ user }) {
       <span className="site-title">UrbanInk</span>
       <div className={`site-content ${menuActive && "active"}`}>
         <ul>
-          {/* Use RouterLink for home navigation */}
           <li className="nav-item">
             <Link
               to="/"
@@ -26,12 +25,9 @@ export default function Navigation({ user }) {
             </Link>
           </li>
 
-          {/* Use ScrollLink for smooth scroll to blog section */}
           <li className="nav-item">
             <Link
               to="/blog"
-              spy={true}
-              smooth={true}
               offset={-70}
               duration={500}
               className="nav-link"
@@ -41,7 +37,6 @@ export default function Navigation({ user }) {
             </Link>
           </li>
 
-          {/* Use RouterLink for login page navigation */}
           <li className="nav-item">
             <Link
               to="/login"
@@ -49,6 +44,15 @@ export default function Navigation({ user }) {
               style={{ cursor: "pointer" }}
             >
               Login
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              to="/signup"
+              className="nav-link"
+              style={{ cursor: "pointer" }}
+            >
+              Signup
             </Link>
           </li>
         </ul>
