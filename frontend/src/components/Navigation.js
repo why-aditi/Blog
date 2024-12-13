@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import "../styles/Navigation.css";
 import { Link } from "react-router-dom"; // Use this Link for route navigation
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function Navigation({ user }) {
   const [menuActive, setmenuActive] = useState(false);
@@ -63,11 +65,13 @@ export default function Navigation({ user }) {
           </span>
         </span>
       </div>
-      <ion-icon
-        name="menu-outline"
-        className="menu-outline"
-        onClick={() => setmenuActive(!menuActive)}
-      ></ion-icon>
+      <div className="menu-icon" onClick={() => setmenuActive(!menuActive)}>
+        {menuActive ? (
+          <CloseIcon style={{ fontSize: 36, cursor: "pointer" }} />
+        ) : (
+          <MenuIcon style={{ fontSize: 36, cursor: "pointer" }} />
+        )}
+      </div>
     </nav>
   );
 }
